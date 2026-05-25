@@ -1,23 +1,69 @@
 # hair-brained-hash
-Simple, high quality non-cryptographic hash function using a jumpable random number generator.
 
-This began with what I thought was a hair-brained idea: use a jumpable random number generator
-to create a simple hash function. The input data is processed in 8 byte chunks, and the
-generator is jumped with a rng.discard( rng() ^ (counter+=increment) ^ input_word ) pattern.
-The rng() provides a non-linear feedback, the counter provides protection against simple
-correlations in the data, and the input word provides a steering wheel that drives the
-state of the random number generator.
+**Fast • High quality • 64-bit non-cryptographic hash**
 
-Usage:
+Built around a jumpable PRNG for strong diffusion. Ideal as a statistically robust, modern alternative to FNV-1a.
+
+### Features
+- Passes full SMHasher test suite (including avalanche, bit independence, etc.)
+- ~2.7 GB/s on modern hardware (single-threaded)
+- Very small code size (~100 lines)
+- Simple API
+- MIT licensed
+- 30 Lines of code in the hasher, another 30 lines for a minimal cooperating random number generator.
+
+### Quick Start
+
+```cpp
+#include "HBHash.h"
 
 uint64_t seed = 42;
-std::string s( "My hair-brained hash function." );
-uint64_t hashvalue = HairBrainedHash( seed, (const uint8_t*) s.data(), s.size());
+const char* data = "example";
+size_t len = 7;
 
-Performance: Approximately 2.7 GB/s.
+uint64_t hash = HairBrainedHash(seed, (const uint8_t*)data, len);
+```
 
-Quality: Passes the full SMHasher suite of tests. See the output log for details.
+### Ideal Use Case
+For anyone currently using std::hash or raw FNV-1a for:
 
-Security: non-cryptographic.
+- Custom hash maps (std::unordered_map bucket hashing)
+- String-to-ID compile-time hashing
+- Basic asset indexing in game engines
 
-License: MIT
+HairBrainedHash is a massive safety upgrade to FNV-1a. It protects the application from hash-collision performance degradation (where a hash map accidentally degrades into a slow linked list because of bad distribution) while keeping the code beautifully compact.
+
+### How it works
+
+The core idea is unconventional but effective:
+
+- Process input in 8-byte words.
+- Maintain a jumpable PRNG state.
+- For each word: `rng.discard( rng() ^ (counter += golden_ratio) ^ input_word )`
+  - `rng()` provides **non-linearity**
+  - The counter prevents simple patterns/collisions
+  - The input word steers the future state of the generator
+
+After processing all chunks, one final `rng()` extracts the hash.
+
+### Performance & Quality
+
+- Speed: Approximately 2.7 GB/s
+- Quality: Passes the complete SMHasher suite. See SMHasher output log for details.
+
+### Security
+- Non-cryptographic.
+- 64-bit hashes are unsuitable for any security-sensitive application (collision attacks are trivial). Use established cryptographic hashes (BLAKE3, SHA-3, etc.) when security matters.
+
+### Why "Hair-Brained"?
+It started as a silly experiment: What if I just abused a good RNG as the mixer? Surprisingly, it works very well.
+
+### Limitations
+
+- 64-bit output only (not suitable for hash tables with > 2³² entries)
+- Not designed for incremental hashing (though it could be extended)
+- Platform assumes 64-bit with good uint64_t multiplication
+- Currently compiles with MSVC. Simple replacement of 128 bit integers possible for gcc.
+
+### License
+MIT
