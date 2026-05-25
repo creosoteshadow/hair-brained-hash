@@ -46,6 +46,12 @@ The core idea is unconventional but effective:
 
 After processing all chunks, one final `rng()` extracts the hash.
 
+### Need a 128-bit output?
+
+You can run two instances of HairBrainedHash in parallel using two different seeds, combining their outputs to form a 128-bit value. 
+- For Performance & Capacity: This is an excellent, fast way to eliminate accidental collisions in massive, distributed datasets exceeding 2^32 elements.
+- CRITICAL SECURITY NOTE: This construction is not cryptographically secure. Because both halves are based on the same 64-bit state machine design (just with different seeds), it does not provide the full security strength of a proper 128-bit hash like BLAKE3. An attacker who finds a way to analyze or attack the underlying structure may be able to generate collisions more efficiently than against a well-designed 128-bit cryptographic hash.
+ 
 ### Performance & Quality
 
 - Speed: Approximately 2.7 GB/s
